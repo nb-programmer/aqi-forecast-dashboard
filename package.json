@@ -6,21 +6,27 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "plotly.js": "^2.16.1",
+    "query-string": "^7.1.1",
+    "ra-data-simple-rest": "^4.4.1",
     "react": "^18.2.0",
+    "react-admin": "^4.4.1",
     "react-dom": "^18.2.0",
+    "react-plotly.js": "^2.6.0",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
+    "backend": "python -m prediction",
+    "dev": "concurrently --kill-others \"npm run start\" \"npm run backend\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest"
+      "react-app"
     ]
   },
   "browserslist": {
@@ -34,5 +40,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "concurrently": "^7.4.0"
   }
 }
