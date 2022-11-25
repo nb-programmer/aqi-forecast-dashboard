@@ -17,8 +17,17 @@ from ..utils import interpolate_date_range, aqi2loc
 
 LOG = logging.getLogger(__name__)
 
-class Predictions(Resource):
-    def get_sample_data(self, location_name : str, forecast_date : pd.Timestamp) -> SelectQuery:
+def get_sample_data(location_name : str, forecast_date : pd.Timestamp, in_future : bool = False, num_points : int = 10) -> SelectQuery:
+    if in_future:
+        return AQI.select(
+            AQI.sampling_ts,
+            AQI.metric_aqi
+        ).where(
+            (AQI.location_name == location_name) & (AQI.sampling_ts >= forecast_date.to_pydatetime())
+        ).order_by(
+            AQI.sampling_ts.asc()
+        ).limit(num_points)
+    else:
         return AQI.select(
             AQI.sampling_ts,
             AQI.metric_aqi
@@ -27,8 +36,9 @@ class Predictions(Resource):
         ).order_by(
             #To get latest data
             AQI.sampling_ts.desc()
-        ).limit(10) # The lookback value of most models
-
+        ).limit(num_points) # The lookback value of most models
+    
+class Predictions(Resource):
     @paginate
     @sortable
     def get(self):
@@ -57,7 +67,7 @@ class Predictions(Resource):
         LOG.info("Generating prediction of %d days using %s" % (num_days, model))
 
         #Original data points
-        data_points = pd.DataFrame(self.get_sample_data(loc, forecast_start).dicts()).sort_values(by=['sampling_ts'])
+        data_points = pd.DataFrame(get_sample_data(loc, forecast_start).dicts()).sort_values(by=['sampling_ts'])
         
         #We are predicting from the next day of last date in data
         start_date = data_points.sampling_ts.max()# + pd.Timedelta('1d')
@@ -114,3 +124,15 @@ class Prediction(Resource):
 
     def delete(self, forecast_id : int):
         return Forecast.get(Forecast.id == forecast_id).delete_instance()
+
+class PredictionCompare(Resource):
+    def get(self, forecast_id : int):
+        fc : Forecast = Forecast.select(Forecast.forecast_meta, Forecast.forecast_start).where(Forecast.id == forecast_id).get()
+        metadata : dict = fc.forecast_meta
+        ds_loc : str = metadata['ds']
+        fc_start = fc.forecast_start
+
+        return {
+            'id': forecast_id,
+            'data': get_sample_data(ds_loc, pd.to_datetime(fc_start), True)
+        }

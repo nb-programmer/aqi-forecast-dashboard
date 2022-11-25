@@ -206,6 +206,10 @@ const aqi_loc_color_map = {
     'Hazardous': 'maroon'
 };
 
+function fetchFuture(record) {
+    
+}
+
 const ForecastChartLayout = (props) => {
     const {
         defaultTitle,
@@ -217,6 +221,21 @@ const ForecastChartLayout = (props) => {
         resource
     } = useShowController();
     
+    let futureData = {id: null, data: []};
+    const fID = (record ? record.id : null);
+    
+    const subQ = useGetOne(
+        'forecast/compare',
+        { id: fID }
+    );
+    
+    console.log(subQ.data);
+
+    if (!subQ.isLoading && !subQ.error && subQ.data)
+        futureData = subQ.data;
+
+    console.log(futureData)
+
     const lineType = props.plotSmooth ? "spline" : "linear";
     
     if (isLoading || isFetching) {
@@ -225,7 +244,7 @@ const ForecastChartLayout = (props) => {
     if (error) {
         return <div>Error!</div>;
     }
-
+    
     const dX_forecast = record.data_forecast.map(d => d.sampling_ts);
     const dY_forecast = record.data_forecast.map(d => d.metric_aqi);
     
@@ -234,6 +253,9 @@ const ForecastChartLayout = (props) => {
 
     const dX_input = record.data_used.map(d => d.sampling_ts);
     const dY_input = record.data_used.map(d => d.metric_aqi);
+
+    const dX_fut = futureData.data.map(d => d.sampling_ts);
+    const dY_fut = futureData.data.map(d => d.metric_aqi);
 
     const forecast_method = record.method;
     const data_interpol_method = record.interpolation;
@@ -267,6 +289,15 @@ const ForecastChartLayout = (props) => {
             x: dX_input,
             y: dY_input,
             name: `Previous AQI(Filled ${data_interpol_method})`,
+            type: 'scatter',
+            mode: 'lines',
+            line: {shape: lineType},
+            visible: 'legendonly'
+        },
+        {
+            x: dX_fut,
+            y: dY_fut,
+            name: `Future AQI(Dataset)`,
             type: 'scatter',
             mode: 'lines',
             line: {shape: lineType},
